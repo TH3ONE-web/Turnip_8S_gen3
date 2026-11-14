@@ -1,18 +1,23 @@
 name: Build Turnip Adreno 735
 
 on:
+  push:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Instalar dependencias y NDK
+      - name: Instalar dependencias de compilacion
         run: |
           sudo apt-get update
-          sudo apt-get install -y meson ninja-build python3-mako glslang-tools unzip wget zip ccache
-          wget -q https://google.com
-          unzip -q android-ndk-r27c-linux.zip
+          sudo apt-get install -y meson ninja-build python3-mako glslang-tools zip ccache flex bison libx11-dev libwayland-dev libdrm-dev
+
+      - name: Instalar Android NDK r27c
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r27c
 
       - name: Descargar Mesa 3D (Turnip)
         run: |
@@ -20,12 +25,13 @@ jobs:
 
       - name: Crear Cross-File para Android ARM64
         run: |
-          cat << 'EOF' > android-aarch64.txt
+          NDK_PATH="${{ steps.setup-ndk.outputs.ndk-path }}"
+          cat << EOF > android-aarch64.txt
           [binaries]
-          ar = 'NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
-          c = ['ccache', 'NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang']
-          cpp = ['ccache', 'NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang++']
-          strip = 'NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
+          ar = '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+          c = ['ccache', '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang']
+          cpp = ['ccache', '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang++']
+          strip = '$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
 
           [host_machine]
           system = 'android'
@@ -33,7 +39,6 @@ jobs:
           cpu = 'armv8'
           endian = 'little'
           EOF
-          sed -i "s|NDK_PATH|$PWD/android-ndk-r27c|g" android-aarch64.txt
 
       - name: Compilar Driver Turnip
         run: |
