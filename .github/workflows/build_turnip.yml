@@ -1,0 +1,76 @@
+name: Build Turnip Adreno 735
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar dependencias y NDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build python3-mako glslang-tools unzip wget zip ccache
+          wget -q https://google.com
+          unzip -q android-ndk-r27c-linux.zip
+
+      - name: Descargar Mesa 3D (Turnip)
+        run: |
+          git clone --depth 1 https://freedesktop.org
+
+      - name: Crear Cross-File para Android ARM64
+        run: |
+          cat << 'EOF' > android-aarch64.txt
+          [binaries]
+          ar = 'NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar'
+          c = ['ccache', 'NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang']
+          cpp = ['ccache', 'NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang++']
+          strip = 'NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip'
+
+          [host_machine]
+          system = 'android'
+          cpu_family = 'aarch64'
+          cpu = 'armv8'
+          endian = 'little'
+          EOF
+          sed -i "s|NDK_PATH|$PWD/android-ndk-r27c|g" android-aarch64.txt
+
+      - name: Compilar Driver Turnip
+        run: |
+          cd mesa
+          meson setup build-android \
+            --cross-file ../android-aarch64.txt \
+            -Dplatforms=android \
+            -Dplatform-sdk-version=33 \
+            -Dandroid-stub=true \
+            -Dgallium-drivers= \
+            -Dvulkan-drivers=freedreno \
+            -Dfreedreno-kmds=kgsl \
+            -Dbuildtype=release
+          ninja -C build-android
+
+      - name: Empaquetar para Adrenotools
+        run: |
+          mkdir output
+          cp mesa/build-android/src/freedreno/vulkan/libvulkan_freedreno.so output/vulkan.ad0735.so
+          cat << 'EOF' > output/meta.json
+          {
+            "schemaVersion": 1,
+            "name": "Turnip-8sGen3-BO2",
+            "description": "Driver Turnip compilado en la nube para Snapdragon 8s Gen 3",
+            "author": "TH3ONE-web",
+            "packageVersion": "1",
+            "vendor": "Mesa",
+            "driverVersion": "Mesa-Latest",
+            "minApi": 28,
+            "libraryName": "vulkan.ad0735.so"
+          }
+          EOF
+          cd output
+          zip -r ../Turnip_8sGen3_BO2.zip vulkan.ad0735.so meta.json
+
+      - name: Subir archivo ZIP compilado
+        uses: actions/upload-artifact@v4
+        with:
+          name: Turnip_8sGen3_BO2
+          path: Turnip_8sGen3_BO2.zip
