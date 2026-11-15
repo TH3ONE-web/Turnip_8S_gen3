@@ -21,7 +21,10 @@ jobs:
 
       - name: Descargar Mesa 3D
         run: |
-          git clone --depth 1 https://github.com/mesa3D/mesa.git
+          DOMINIO="gitlab.freedesktop.org"
+          RUTA="mesa/mesa/-/archive/main/mesa-main.tar.gz"
+          curl -sL "https://${DOMINIO}/${RUTA}" -o mesa.tar.gz
+          tar -xzf mesa.tar.gz && mv mesa-main mesa
 
       - name: Crear Cross-File
         run: |
