@@ -54,6 +54,11 @@ jobs:
             -Dgallium-drivers= \
             -Dvulkan-drivers=freedreno \
             -Dfreedreno-kmds=kgsl \
+            -Degl=disabled \
+            -Dglx=disabled \
+            -Dopengl=false \
+            -Dgles1=disabled \
+            -Dgles2=disabled \
             -Dbuildtype=release
           ninja -C build-android
 
