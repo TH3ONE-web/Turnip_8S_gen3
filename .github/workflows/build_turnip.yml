@@ -21,7 +21,7 @@ jobs:
 
       - name: Descargar Mesa 3D
         run: |
-          git clone --depth 1 https://github.com/Mesa3D/mesa.git
+          git clone --depth 1 https://github.com/mesa3D/mesa.git
 
       - name: Crear Cross-File
         run: |
