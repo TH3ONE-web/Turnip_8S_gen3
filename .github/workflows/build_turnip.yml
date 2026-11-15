@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Instalar dependencias de compilacion
+      - name: Instalar dependencias
         run: |
           sudo apt-get update
           sudo apt-get install -y meson ninja-build python3-mako glslang-tools zip ccache flex bison libx11-dev libwayland-dev libdrm-dev
@@ -19,11 +19,11 @@ jobs:
         with:
           ndk-version: r27c
 
-      - name: Descargar Mesa 3D (Turnip)
+      - name: Descargar Mesa 3D
         run: |
-          git clone --depth 1 https://freedesktop.org
+          git clone --depth 1 https://github.com/Mesa3D/mesa.git
 
-      - name: Crear Cross-File para Android ARM64
+      - name: Crear Cross-File
         run: |
           NDK_PATH="${{ steps.setup-ndk.outputs.ndk-path }}"
           cat << EOF > android-aarch64.txt
@@ -40,7 +40,7 @@ jobs:
           endian = 'little'
           EOF
 
-      - name: Compilar Driver Turnip
+      - name: Compilar Turnip
         run: |
           cd mesa
           meson setup build-android \
@@ -54,7 +54,7 @@ jobs:
             -Dbuildtype=release
           ninja -C build-android
 
-      - name: Empaquetar para Adrenotools
+      - name: Empaquetar Driver
         run: |
           mkdir output
           cp mesa/build-android/src/freedreno/vulkan/libvulkan_freedreno.so output/vulkan.ad0735.so
@@ -62,7 +62,7 @@ jobs:
           {
             "schemaVersion": 1,
             "name": "Turnip-8sGen3-BO2",
-            "description": "Driver Turnip compilado en la nube para Snapdragon 8s Gen 3",
+            "description": "Driver Turnip para Snapdragon 8s Gen 3",
             "author": "TH3ONE-web",
             "packageVersion": "1",
             "vendor": "Mesa",
@@ -74,7 +74,7 @@ jobs:
           cd output
           zip -r ../Turnip_8sGen3_BO2.zip vulkan.ad0735.so meta.json
 
-      - name: Subir archivo ZIP compilado
+      - name: Subir ZIP compilado
         uses: actions/upload-artifact@v4
         with:
           name: Turnip_8sGen3_BO2
